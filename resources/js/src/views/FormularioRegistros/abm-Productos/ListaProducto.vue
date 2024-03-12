@@ -14,7 +14,7 @@
         <b-card-title style="text-align: center">Listado de Productos</b-card-title>
         <b-card-body>
           <b-row>
-            <b-col sm="4" md="5" xl="6" lg="6" class="mb-1">
+            <b-col sm="6" md="6" xl="6" lg="6" class="mb-1">
               <!-- Boton Modal -->
               <b-button v-ripple.400="'rgba(113, 102, 240, 0.15)'" v-b-modal.frm-articulo variant="success"
                 @click="clickAccion('', 'guardar')" :class="{ 'd-none': $store.state.app.isCrea }">
@@ -22,7 +22,7 @@
               </b-button>
 
             </b-col>
-            <b-col sm="8" md="7" xl="6" lg="6">
+            <!-- <b-col sm="4" md="4" xl="6" lg="6">
               <b-form-group label-for="filter-input">
                 <b-input-group>
                   <b-form-input id="filter-input" v-model="filter" debounce="200" type="search"
@@ -31,6 +31,11 @@
                     <b-button :disabled="!filter" variant="danger" @click="filter = ''">Limpiar</b-button>
                   </b-input-group-append>
                 </b-input-group>
+              </b-form-group>
+            </b-col> -->
+            <b-col sm="6" md="6" xl="6" lg="6">
+              <b-form-group label="Codigo " label-for="lbCodigo">
+                <b-form-input id="txtCodigo" placeholder="Codigo" v-model="txtCodigo" @input="TraerCodigo(1)" />
               </b-form-group>
             </b-col>
           </b-row>
@@ -221,6 +226,7 @@ export default {
   },
   data() {
     return {
+      txtCodigo: "",
       fontSize: "",
       TipoAccion: null,
       stickyHeader: true,
@@ -229,7 +235,7 @@ export default {
         name: "flip-list",
       },
       currentPage: 1,
-      perPage: 20,  // Número de elementos por página
+      perPage: 10,  // Número de elementos por página
       totalRows: 1,
 
       shows: true,
@@ -535,50 +541,99 @@ export default {
       console.log("Página seleccionada:", newPage);
       // Aquí puedes realizar acciones adicionales con el nuevo número de página
       this.listArticulo(newPage);
+      this.TraerCodigo(newPage);
     },
     async listArticulo(newPage) {
-    let me = this;
-    me.currentPage = newPage || me.currentPage; // Si newPage es nulo, conserva la página actual
-    const axios = require("axios").default;
+      let me = this;
+      me.currentPage = newPage || me.currentPage; // Si newPage es nulo, conserva la página actual
+      const axios = require("axios").default;
 
-    const formData = new FormData();
-    formData.append("page", me.currentPage);
-    formData.append("perPage", me.perPage);
-    me.items = [];
-    me.isBusy = true;
-    var url = "api/auth/listArticuloPagianado";
+      const formData = new FormData();
+      formData.append("page", me.currentPage);
+      formData.append("perPage", me.perPage);
+      me.items = [];
+      me.isBusy = true;
+      var url = "api/auth/listArticuloPagianado";
 
-    me.loaded = false;
-    var lista = [];
+      me.loaded = false;
+      var lista = [];
 
-    try {
+      try {
         const response = await axios.post(url, formData);
         var resp = response.data.data;
         me.totalRows = response.data.total;
         me.currentPage = response.data.current_page;
 
         for (let i = 0; i < resp.length; i++) {
-            lista.push({
-                artId: resp[i].artId,
-                codigo: resp[i].codigo,
-                artNombre: resp[i].artNombre,
-                catNombre: resp[i].catNombre,
-                marNombre: resp[i].marNombre,
-                uniNombre: resp[i].uniNombre,
-                artCosto: resp[i].artCosto,
-                artPrecioVenta: resp[i].artPrecioVenta,
-                artCantidad: resp[i].artCantidad,
-                artCantMin: resp[i].badgeColor,
-            });
+          lista.push({
+            artId: resp[i].artId,
+            codigo: resp[i].codigo,
+            artNombre: resp[i].artNombre,
+            catNombre: resp[i].catNombre,
+            marNombre: resp[i].marNombre,
+            uniNombre: resp[i].uniNombre,
+            artCosto: resp[i].artCosto,
+            artPrecioVenta: resp[i].artPrecioVenta,
+            artCantidad: resp[i].artCantidad,
+            artCantMin: resp[i].badgeColor,
+          });
         }
 
         me.items = lista;
         me.isBusy = false;
         me.loaded = true;
-    } catch (error) {
+      } catch (error) {
         alert("Error al obtener los datos Lista Articulo " + error);
-    }
-},
+      }
+    },
+
+
+
+    async TraerCodigo(newPage) {
+      let me = this;
+      me.currentPage = newPage || me.currentPage; // Si newPage es nulo, conserva la página actual
+      const axios = require("axios").default;
+
+      const formData = new FormData();
+      formData.append("page", me.currentPage);
+      formData.append("perPage", me.perPage);
+      formData.append("codigo", me.txtCodigo);
+     
+      me.items = [];
+      me.isBusy = true;
+      var url = "api/auth/TraerCodigo";
+
+      me.loaded = false;
+      var lista = [];
+
+      try {
+        const response = await axios.post(url, formData);
+        var resp = response.data.data;
+        me.totalRows = response.data.total;
+        me.currentPage = response.data.current_page;
+
+        for (let i = 0; i < resp.length; i++) {
+          lista.push({
+            artId: resp[i].artId,
+            codigo: resp[i].codigo,
+            artNombre: resp[i].artNombre,
+            catNombre: resp[i].catNombre,
+            marNombre: resp[i].marNombre,
+            uniNombre: resp[i].uniNombre,
+            artCosto: resp[i].artCosto,
+            artPrecioVenta: resp[i].artPrecioVenta,
+            artCantidad: resp[i].artCantidad,
+            artCantMin: resp[i].badgeColor,
+          });
+        }
+
+        me.items = lista;
+        me.isBusy = false;
+        me.loaded = true;
+      } catch (error) {
+        alert("Error al obtener los datos Lista Articulo " + error);
+      }
+    },
     onContext(ctx) {
       // The date formatted in the locale, or the `label-no - date - selected` string
       this.formatted = ctx.selectedFormatted;

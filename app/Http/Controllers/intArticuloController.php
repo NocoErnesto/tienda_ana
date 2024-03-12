@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 use App\Http\Controllers\bitacoraController;
 use League\CommonMark\Node\Query\OrExpr;
-use Illuminate\Support\Facades\Storage;
-use Intervention\Image\Facades\Image;
-
 
 // use Intervention\Image\ImageManagerStatic as Image;
 
@@ -33,7 +30,7 @@ class intArticuloController extends Controller
 
         // Seleccionamos solo las columnas necesarias
         $articulo = DB::table('intarticulo')
-            ->select('artId', 'artCodigo', 'artNombre', 'artPrecioVenta', 'artCantidad', 'artFoto', 'catId')
+            ->select('artId', 'artCodigo', 'artNombre', 'artPrecioVenta', 'artCantidad', 'artFoto','catId')
             ->orderBy('catId') // Ordenamos por catId
             ->skip(($page - 1) * $perPage) // Calculamos el offset
             ->take($perPage) // Limitamos el número de resultados
@@ -60,11 +57,64 @@ class intArticuloController extends Controller
             return response()->json(['Mensaje' => 'No se encontraron datos']);
         }
     }
-    public function listArticuloPagianado(Request $request)
+
+    public function TraerCodigo(Request $request)
     {
         $perPage = $request->input('perPage', 10);
         $page = $request->input('page', 1);
+        $codigo = $request->input('codigo'); // Assuming 'codigo' is in the request
+    
+        $articulos = DB::table('intarticulo as a')
+            ->join('intcategoria as b', 'a.catId', '=', 'b.catId')
+            ->join('intmarca as c', 'a.marId', '=', 'c.marId')
+            ->join('intunidad as d', 'a.uniId', '=', 'd.uniId')
+            ->select(
+                'a.artId',
+                'a.artCodigo as codigo',
+                'a.artNombre as artNombre',
+                'a.catId',
+                'b.catNombre as catNombre',
+                'a.marId',
+                'c.marNombre as marNombre',
+                'a.uniId',
+                'd.uniNombre as uniNombre',
+                'a.artCosto',
+                'a.artPrecioVenta',
+                'a.artCantidad',
+                DB::raw("IF(a.artCantidad > a.artCantMin, 'light-success', 'light-danger') as badgeColor")
+            )
+            ->where('a.artActivo', 1);
+    
+        if ($codigo) {
+            $articulos->where('a.artCodigo', 'LIKE', $codigo . '%');
+        }
+        $totalRows = $articulos->count(); // Get the total number of rows for the search results
 
+        $articulos = $articulos
+            ->orderByDesc(DB::raw("CAST(SUBSTR(a.artCodigo, 3) AS UNSIGNED)"))
+            ->skip(($page - 1) * $perPage)
+            ->take($perPage)
+            ->get();
+    
+        if ($articulos->isNotEmpty()) {
+            $response = [
+                'total' =>     $totalRows,
+                'per_page' => $perPage,
+                'current_page' => $page,
+                'data' => $articulos->toArray(),
+            ];
+    
+            return response()->json($response);
+        } else {
+            return response()->json(['Mensaje' => 'No se encontraron datos']);
+        }
+    }
+
+
+    public function listArticuloPagianado(Request $request)
+    {$perPage = $request->input('perPage', 10);
+        $page = $request->input('page', 1);
+    
         $articulos = DB::table('intarticulo as a')
             ->join('intcategoria as b', 'a.catId', '=', 'b.catId')
             ->join('intmarca as c', 'a.marId', '=', 'c.marId')
@@ -89,7 +139,7 @@ class intArticuloController extends Controller
             ->skip(($page - 1) * $perPage)
             ->take($perPage)
             ->get();
-
+    
         if ($articulos->isNotEmpty()) {
             $response = [
                 'total' => DB::table('intarticulo')->where('artActivo', 1)->count(),
@@ -97,7 +147,7 @@ class intArticuloController extends Controller
                 'current_page' => $page,
                 'data' => $articulos->toArray(),
             ];
-
+    
             return response()->json($response);
         } else {
             return response()->json(['Mensaje' => 'No se encontraron datos']);
@@ -122,7 +172,7 @@ class intArticuloController extends Controller
     }
 
 
-
+  
 
     public function siguienteCodigo()
     {
@@ -199,9 +249,8 @@ class intArticuloController extends Controller
             $tabla = 'intarticulo';
             $artFoto = null;
             if ($request->hasFile('artFoto')) {
-                // $artFoto = $request->file('artFoto')->get();
-                $image = $request->file('artFoto');
-                $artFoto = $this->compressAndEncodeImage($image);
+                $artFoto = $request->file('artFoto')->get();
+                
             }
             DB::table($tabla)->insert([
                 'artCodigo' => $artCodigo,
@@ -225,20 +274,6 @@ class intArticuloController extends Controller
             DB::rollBack();
             return response()->json(['Mensaje' => 'No se Logró Realizar la Operación: ' . $e->getMessage()], 409);
         }
-    }
-    private function compressAndEncodeImage($image)
-    {
-        $img = Image::make($image);
-
-        // Redimensionar la imagen a un máximo de 800 píxeles en el lado más largo
-        $img->resize(800, null, function ($constraint) {
-            $constraint->aspectRatio();
-        });
-
-        // Comprimir la imagen con calidad 75
-        $compressedImage = $img->encode('jpg', 75);
-
-        return $compressedImage->encode('data-url')->encoded;
     }
     public function modificarArticulo(Request $request)
     {
@@ -338,6 +373,7 @@ class intArticuloController extends Controller
         }
     }
 
+    
 
 
     public function buscarPorNombre(Request $request)

@@ -74,6 +74,8 @@ Route::group(['prefix' => 'auth'], function () {
   Route::post('CantidadCategoria', [intArticuloController::class, 'CantidadCategoria']);
   Route::get('CantidadCategoria_todo', [intArticuloController::class, 'CantidadCategoria_todo']);
   Route::post('listArticuloCatalogo', [intArticuloController::class, 'listArticuloCatalogo']);
+  Route::post('TraerCodigo', [intArticuloController::class, 'TraerCodigo']);
+  
   
    
   
